@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table, td
+{
+  border: 1px solid black;
+}
+
+.drawPiece
+{
+  background-color: red;
+}
+
+.drawSeed
+{
+  background:
+    url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAADG0lEQVQ4jYVTaUuUYRR93sV3mZlGS2lsNEvLhdDRGaNQM9wyKi3LFRqXkcac1IbMcUFIEy3NEYN0WhyTMlotsYgoLZEUwsI+ZBH0B/oWbd+C050yiAq6cOByn3Puufd9n4expZAJq2SZhev1LERVmcpxv46YlvI1Gg2LpLNQ4qjsj1iv1bL9JlN5r9U6N1xb+77Pan1enpBQGaPTsRidlrfFxzd0Fxa+cxcXf3Wlpy/krl5dtV6Wf1qsoY41ycmeyRMnsOj14i3hlceDR21tcFgsLQfN5q77TU2YbW/HY5cLY5WV6M7ORp7R6A0XRca2Bwdvu3roEF6cPIlFtxtvCK97erDQ2YlrBw58vlpR8WWusRGzTicmbTbc2rsXnrQ01MXEYIuq7mSVGzZcvl1VhZn6esw3N2OhtRULLS2YP3oUM3V1eOJw4IndjoelpbiTl4eR9HT0ms1wrl2LTI3mGquOi3s2WliIu2VlmCTiDAmeVldjmkadItGDkhLcKyjAzZycH2J3QgJcISGwarVIE4SXrDQ8fPp0RgYuEeFGfj7Gi4sxUVSECcrv5Obi5o4dGM3MxPmUFHTHxuKIwYAKRcE+QUAqx82xXf7+Hc0mE/qSkn7sNpSVBS/hAjU9u3UrzlDdnZiIY5GRqAkMRIWqokQUkcPzvgYdzCyKwSUGw6fG6Gh0UKMeiwWnSTBAGKRd+8n1OO17OCAANo0GVllGPjXI4vmPG3nOwPT0K7Nl2V4eFISmsDB0rVuH/qgoDJLjYEQE+oxGtJG4gXZ2kHupnx92k3smz9uW/7pIep4XNqrqWbtOh3Yas3/lSngI5ygf8PdHr69O7vXkbqXd40VxQM9xwu+XUS+KYuQmRRlzkkMfOQ2T6AqJRwlDlJ8icS2NnihJY4IgRHEct+z3BlpCHB3sMSnKLZcofhuhLz1OY/twkRo2UC1WkiZ4ni/ycQl/PQkdwUIEW6iiDFdL0gevJMGHg35+H42SdJ1ca4mzaYn7z+AJKwibVUmqSVLVqWRFeUy5k2qphKAlzn/D99DouXEGQjD7+dq5fxG/A7A9Qh90KIciAAAAAElFTkSuQmCC')
+    no-repeat
+    center;
+}
+
+</style>
+</head>
+<body style="overflow: hidden">
+
+    <h2>Puntaje: <samp id="intPuntaje"></samp></h2>
+    <h2>Velocidad: <samp id="intVelocidad"></samp> km/h</h2>
+    <h2>Mejor Puntaje: <samp id="intMejorPuntaje">0</samp></h2>
+
+<script>
+
+document.addEventListener("keydown", direccionar);
+
+var intMejorPuntaje = localStorage.getItem("mySnakeBestRecord");
+
+if(intMejorPuntaje)
+{
+  document.getElementById("intMejorPuntaje").innerHTML = intMejorPuntaje;
+}
+
+
+var objPuntaje = document.getElementById("intPuntaje");
+var objVelocidad = document.getElementById("intVelocidad");
+
+var arrSnake = new Array();
+var arrSentidos = new Array();
+
+var tbl = null, objNodoCab = null, objNodoSemilla = null, objIntervaloJuego = null, objIntervaloJuego2 = null;
+
+var intCentralX = 0,
+    intCentralY = 0,
+    intSizeSnake = 1,
+    intTotalY = 0,
+    intTotalX = 0,
+    intTiempoAvance = 150,
+    intVelocidad = 10,
+    indicadorAncho = 74,
+    indicadorAlto = 67;
+
+var strDireccion = "right";
+
+objPuntaje.innerHTML = intSizeSnake - 1;
+objVelocidad.innerHTML = intVelocidad;
+
+function tableCreate()
+{
+  var body = document.getElementsByTagName('body')[0];
+
+  tbl = document.createElement('table');
+
+  tbl.style.border = 0;
+  tbl.style.marginLeft = '5%';
+  tbl.style.marginRight = '5%';
+  tbl.style.marginTop = '1%';
+
+  var tbdy = document.createElement('tbody');
+
+  var altoVentana = window.innerHeight;
+  var anchoVentana = window.innerWidth;
+
+  intTotalX = parseInt(anchoVentana / indicadorAncho);
+  intTotalY = parseInt(altoVentana / indicadorAlto);
+
+  for (var y = 0; y < intTotalY; y++)
+  {
+    var tr = document.createElement('tr');
+
+    for (var x = 0; x < intTotalX; x++)
+    {
+      var td = document.createElement('td');
+
+      td.setAttribute('id', getPuntoID((x + 1), (y + 1)));
+
+      td.style.height = '16px';
+      td.style.width = '16px';
+      td.style.border = '1px solid silver';
+
+      tr.appendChild(td);
+    }
+    tbdy.appendChild(tr);
+  }
+  tbl.appendChild(tbdy);
+  body.appendChild(tbl);
+
+  intCentralX = parseInt(tbl.getElementsByTagName('tr')[0].getElementsByTagName('td').length / 2);
+  intCentralY = parseInt(tbl.getElementsByTagName('tr').length / 2);
+
+}
+
+function pintarNodo(intX, intY)
+{
+  objNodoCab = document.getElementById(getPuntoID(intX, intY));
+
+  try
+  {
+    if(objNodoCab)
+    {
+      if(objNodoSemilla === objNodoCab)
+      {
+        objNodoSemilla.classList.remove("drawSeed");
+
+        pintarAlimento();
+
+        intSizeSnake++;
+
+        intVelocidad += 5;
+        intTiempoAvance -= 5;
+
+        objPuntaje.innerHTML = intSizeSnake - 1;
+        objVelocidad.innerHTML = intVelocidad;
+
+        clearInterval(objIntervaloJuego);
+        clearInterval(objIntervaloJuego2);
+
+        objIntervaloJuego2 = setInterval(avanzarSentido, intTiempoAvance);
+      }
+      else
+      {
+        borrarNodo();
+      }
+
+      objNodoCab.classList.add('drawPiece');
+      arrSnake.push(objNodoCab);
+
+      return objNodoCab;
+    }
+    else
+    {
+      borrarNodo();
+    }
+  }
+  catch(e)
+  {
+    console.log(e);
+  }
+  clearInterval(objIntervaloJuego);
+
+  var strPuntajeObtenido = objPuntaje.innerHTML
+
+  intMejorPuntaje = localStorage.getItem("mySnakeBestRecord") | "0";
+
+  if (parseInt(strPuntajeObtenido) > parseInt(intMejorPuntaje))
+  {
+    localStorage.setItem("mySnakeBestRecord", strPuntajeObtenido);
+    alert("!!! Nuevo Record: " + strPuntajeObtenido);
+  }
+  else
+  {
+    alert("Puntaje Obtenido: " + strPuntajeObtenido);
+  }
+
+  window.location.reload();
+}
+
+function borrarNodo()
+{
+  var objNodo = arrSnake.shift();
+
+  if(objNodo)
+  {
+    objNodo.classList.remove('drawPiece');
+    objNodo.classList.remove('drawSeed');
+  }
+
+  return objNodo;
+}
+
+function getPuntoID(intX, intY)
+{
+  return intX + ',' + intY;
+}
+
+function avanzarSentido()
+{
+  var strID = objNodoCab.getAttribute('id');
+  var arrID = strID.split(",");
+
+  switch(strDireccion)
+  {
+    case "up":
+    {
+      pintarNodo(arrID[0], parseInt(arrID[1]) - 1);
+      break;
+    }
+    case "down":
+    {
+      pintarNodo(arrID[0], parseInt(arrID[1]) + 1);
+      break;
+    }
+    case "left":
+    {
+      pintarNodo(parseInt(arrID[0]) - 1, arrID[1]);
+      break;
+    }
+    case "right":
+    {
+      pintarNodo(parseInt(arrID[0]) + 1, arrID[1]);
+      break;
+    }
+  }
+}
+
+function verificarRetroceso(intAntX, intAntY, intActX, intActY)
+{
+  var objNodoAnt = document.getElementById(getPuntoID(intX, intY));
+
+}
+
+function direccionar(event)
+{
+  var strTecla = event.key.toLowerCase();
+
+  strDireccion = arrSentidos.shift();
+
+  arrSentidos.push(strTecla);
+
+  switch(strTecla)
+  {
+    case 'arrowup':
+    case 'up':
+    {
+      if(strDireccion !== 'arrowdown' && strDireccion !== 'down')
+      {
+        strDireccion = 'up';
+      }
+      break;
+    }
+    case 'arrowdown':
+    case 'down':
+    {
+      if(strDireccion !== 'arrowup' && strDireccion !== 'up')
+      {
+        strDireccion = 'down';
+      }
+      break;
+    }
+    case 'arrowleft':
+    case 'left':
+    {
+      if(strDireccion !== 'arrowright' && strDireccion !== 'right')
+      {
+        strDireccion = 'left';
+      }
+      break;
+    }
+    case 'arrowright':
+    case 'right':
+    {
+      if(strDireccion !== 'arrowleft' && strDireccion !== 'left')
+      {
+        strDireccion = 'right';
+      }
+      break;
+    }
+    case 'escape':
+    case 'esc':
+    {
+      alert("JUEGO EN PAUSA:  \n \n¿CONTINUAR?");
+    }
+  }
+}
+
+function pintarAlimento()
+{
+  try
+  {
+    objNodoSemilla = null
+
+    while(objNodoSemilla == null)
+    {
+      var intAlimentoX = Math.floor(Math.random() * parseInt(intTotalX));
+      var intAlimentoY = Math.floor(Math.random() * parseInt(intTotalY));
+
+      objNodoSemilla = document.getElementById(getPuntoID(intAlimentoX, intAlimentoY));
+
+      for(var i = 0; i < arrSnake.length; i++)
+      {
+        if(arrSnake[i] == objNodoSemilla)
+        {
+          objNodoSemilla = null;
+        }
+      }
+    }
+
+    if(objNodoSemilla)
+    {
+      objNodoSemilla.classList.add('drawSeed');
+
+      return objNodoSemilla;
+    }
+  }
+  catch(e)
+  {
+    console.log(e);
+  }
+}
+
+tableCreate();
+
+pintarNodo(1, intCentralY);
+
+pintarAlimento();
+
+objIntervaloJuego = setInterval(avanzarSentido, intTiempoAvance);
+
+</script>
+
+</body>
+</html>
